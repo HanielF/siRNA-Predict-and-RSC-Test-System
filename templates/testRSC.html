@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TestRSC</title>
+</head>
+<link href="{{static_url("css/demo.css")}}" rel="stylesheet" type="text/css">
+<link rel="stylesheet" href="static/css/testRSC.css" type="text/css" />
+<body>
+    <div id="menu">
+        <ul>
+            <li class="rsc">data_util
+                <div class="dropdown_1column">
+                    <ul>
+                            <li class="item">char_remove</li>
+                            <li class="item">cal_time</li>
+                            <li class="item">copy_part_of_data</li>
+                            <li class="item">truncate_part_of_data</li>
+                            <li class="item">get_sample_freq</li>
+                            <li class="item">standardize_data</li>
+                            <li class="item">normalize_data</li>
+                            <li class="item">split_dataset</li>
+                            <li class="item">EmbeddedTextDataset</li>
+                    </ul>
+                </div>
+            </li>
+            <li class="rsc">sirna_util
+                <div class="dropdown_2column">
+                    <ul class="simple">
+                            <li class="item">get_idx_base</li>
+                            <li class="item">idx_to_seq</li>
+                            <li class="item">get_seq_motif</li>
+                            <li class="item">filter_sirna</li>
+                    </ul>
+                </div>
+            </li>
+            <li class="rsc">train_util
+                 <div class="dropdown_2column">
+                    <ul class="simple">
+                            <li class="item">train</li>
+                            <li class="item">evaluate</li>
+                    </ul>
+                </div>
+            </li>
+            <li class="rsc">model_util
+                <div class="dropdown_1column">
+                    <ul>
+                            <li class="item">Word2vecModel</li>
+                            <li class="item">MultiMotifLSTMModel</li>
+                            <li class="item">EmbeddingLSTMModel</li>
+                            <li class="item">count_parameters</li>
+                    </ul>
+                </div>
+            </li>
+            <li class="rsc">file_util
+                <div class="dropdown_1column">
+                    <ul class="simple">
+                            <li class="item">get_data_from_file</li>
+                            <li class="item">write_csv_excel</li>
+                    </ul>
+                </div>
+            </li>
+            <li class="rsc">plot_util
+                <div class="dropdown_2column">
+                    <ul>
+                            <li class="item">make_plot</li>
+                            <li class="item">make_scatter</li>
+                    </ul>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div id="imglabel" >
+        <span>RSC Function: </span>
+        <span id="funcName" style="margin-left:10px" > data_util.char_remove</span>
+    </div>
+    <div id="rsc_code">
+    <pre>
+    </pre>
+<pre id="code_char_remove" display='none' >
+def char_remove(data, chr_list=None):
+    '''
+    Desc：
+        将data中所有的chr_list中的字符去除
+
+    Args：
+        data: pd.Series/ndarray/list  --  待处理数据
+        chr_list: ndarray/list -- 待移除的字符，若为None，则原样返回data
+    Returns：
+    data -- 去除所有chr_list中字符后的data
+    '''
+    if chr_list is None:
+        return data
+    if type(data) == pd.Series:
+        for ch in chr_list:
+            data = data.str.replace(ch, '')
+    elif type(data) == np.ndarray or type(data) == list:
+        for i, w in enumerate(data):
+            for ch in chr_list:
+                data[i] = w.replace(ch, '')
+    return data
+</pre>
+<pre id="code_cal_time" style="display:none">
+def cal_time(start_time, end_time):
+    '''
+    Desc：
+        计算时间差，返回小时，分钟和秒
+    Args：
+        start_time  --  开始时间
+        end_time  --  结束时间
+    Returns：
+        elapsed_hours, elapsed_mins, elapsed_secs  --  经过的小时，分钟，秒
+    '''
+    if end_time < start_time:
+        raise ValueError("结束时间不可小于开始时间")
+    elapsed_time = end_time - start_time
+    elapsed_hours = int(elapsed_time // 3600)
+    elapsed_mins = int((elapsed_time - elapsed_hours * 3600) // 60)
+    elapsed_secs = int(elapsed_time - elapsed_mins * 60 - elapsed_hours * 3600)
+    return elapsed_hours, elapsed_mins, elapsed_secs
+</pre>
+<pre id="code_copy_part_of_data" style="display:none">
+def copy_part_of_data(xdata, ydata, yrange=[], copytimes=1):
+    '''
+    Desc：
+        按照y值的范围，将数据集的部分数据进行拷贝扩增
+    Args：
+        xdata: ndarray  --  数据集中的x
+        ydata: ndarray  --  数据集中的y
+        yrange: tuple/list(tuple)  --  需扩增的数据的y值范围，若为空，则扩增全部样本
+        copytimes: int  --  扩增的次数
+    Returns：
+        x, y: ndarray  --  扩增后的数据，y是一维数据
+    '''
+    # 异常处理
+    if type(xdata) not in [np.ndarray, list] or type(ydata) not in [np.ndarray, list]:
+        raise Exception("xdata和ydata类型需要为list或numpy.ndarray")
+    if len(xdata) == 0:
+        raise Exception("xdata不能为空")
+    if len(yrange) > 0 and type(yrange) != list and type(yrange) != tuple:
+        raise Exception("yrange的类型必须为list或tuple，如[(1, 2)], (1,2)")
+    xdata = np.array(xdata)
+    ydata = np.array(ydata)
+
+    # label标签不超过1维
+    ydata = ydata.flatten()
+    if len(ydata.shape) > 1:
+        raise Exception("ydata的维度不可以超过1维")
+    # yrange不指定则拷贝全部数据
+    if type(yrange) is tuple:
+        yrange = [yrange]
+    if len(yrange) == 0:
+        ymin, ymax = np.min(ydata), np.max(ydata)
+        ydata = [(ymin, ymax)]
+
+    # 对要拷贝的数据进行拼接
+    xdata_shape = list(xdata.shape)
+    xdata_shape[0] = 0
+    ydata_shape = list(ydata.shape)
+    ydata_shape[0] = 0
+    res_copy_x, res_copy_y = np.empty(xdata_shape), np.empty(ydata_shape)
+    for i in range(copytimes):
+        for (miny, maxy) in yrange:
+            idx = (ydata >= miny) & (ydata <= maxy)
+            copy_data_x, copy_data_y = xdata[idx], ydata[idx]
+            res_copy_x = np.concatenate((res_copy_x, copy_data_x))
+            res_copy_y = np.concatenate((res_copy_y, copy_data_y))
+
+    xdata = np.concatenate((xdata, res_copy_x[1:]))
+    ydata = np.concatenate((ydata, res_copy_y[1:]))
+    return xdata, ydata
+</pre>
+<pre id="code_truncate_part_of_data" style="display:none">
+def truncate_part_of_data(xdata, ydata, yrange=[]):
+    '''
+    Desc：
+        按照y值的范围，将数据集的部分数据进行截断
+    Args：
+        xdata: ndarray  --  数据集中的x
+        ydata: ndarray  --  数据集中的y
+        yrange: list(tuple)  --  需截断的数据的y值范围，为空则不截断
+    Returns：
+        x, y: ndarray  --  截断后的数据，y是一维数据
+    '''
+    # 异常处理
+    if type(xdata) not in [np.ndarray, list] or type(ydata) not in [np.ndarray, list]:
+        raise Exception("xdata和ydata类型需要为numpy.ndarray")
+    if len(xdata) == 0:
+        raise Exception("xdata不能为空")
+    if len(yrange) > 0 and type(yrange) != list and type(yrange) != tuple:
+        raise Exception("yrange的类型必须为list或tuple，如[(1, 2)], (1,2)")
+
+    xdata = np.array(xdata)
+    ydata = np.array(ydata)
+    # label标签不超过1维
+    ydata = ydata.flatten()
+    if len(ydata.shape) > 1:
+        raise Exception("ydata的维度不可以超过1维")
+    if type(yrange) is tuple:
+        yrange = [yrange]
+    if len(yrange) == 0:
+        return xdata, ydata
+
+    # 提取需要的数据
+    for (miny, maxy) in yrange:
+        idx = (ydata < miny) | (ydata > maxy)
+        xdata, ydata = xdata[idx], ydata[idx]
+    return xdata, ydata
+</pre>
+<pre id="code_get_sample_freq" style="display:none">
+def get_sample_freq(data=None):
+    '''
+    Desc：
+        统计样本出现次数
+    Args：
+        data:ndarray/pd.Series/list -- 待统计数据
+    Returns：
+        res:ndarray  --  一列是样本，一列是对应的频次
+    '''
+    if data is None:
+        raise ValueError("data不能为空")
+    if type(data) not in [pd.DataFrame, pd.Series, list, np.ndarray]:
+        raise ValueError("data类型只支持DataFrame, Series, ndarray和list")
+    if type(data) in [list, np.ndarray]:
+        data = pd.Series(data)
+    elif type(data) is pd.DataFrame:
+        data = data[0]
+    freq = data.value_counts()
+    samples = freq.index
+    res = pd.DataFrame(list(zip(samples, freq)))
+    return res.values
+</pre>
+<pre id="code_standardize_data" style="display:none">
+def standardize_data(data, axis=-1, std=0, mean=0):
+    '''
+    Desc：
+        对数据进行标准化处理，返回标准化后的数据
+    Args：
+        data: ndarray/list  --  待标准化的数据
+        axis: int  --  标准化的维度
+        std: list/int  --  可选的标准差
+        mean: list/int  --  可选的均值
+    Returns：
+        data: ndarray  --  标准化后的data
+    '''
+    # 异常处理
+    listFlag = False
+    if type(data) is list:
+        data = np.array(data)
+        listFlag = True
+    elif type(data) != list and type(data) != np.ndarray:
+        raise TypeError("data类型应该为list或np.ndarray")
+    if type(axis) != int:
+        raise TypeError("axis类型应该为整形")
+
+    # 判断要标准化的维度和是否输入指定的均值和标准差
+    if axis is None and std == 0:
+        std = np.std(data)
+    elif axis is not None and std == 0:
+        std = np.std(data, axis=axis)
+    if axis is None and mean == 0:
+        mean = np.mean(data)
+    elif axis is not None and mean == 0:
+        mean = np.mean(data, axis=axis)
+
+    # 标准化数据
+    data = (data - mean) / std
+    return data.tolist() if listFlag else data
+</pre>
+<pre id="code_normalize_data" style="display:none">
+def normalize_data(data, axis=None):
+    '''
+    Desc：
+        对数据进行归一化，即变成0-1范围内小数
+    Args：
+        data: ndarray/list  --  待归一化的数据
+        axis: int  --  归一化的维度
+    Returns：
+        data: ndarray  --  归一化后的data
+    '''
+    # 异常处理
+    listFlag = False
+    if type(data) is list:
+        data = np.array(data)
+        listFlag = True
+    elif type(data) != list and type(data) != np.ndarray:
+        raise TypeError("data类型应该为list或np.ndarray")
+    if type(axis) != int and axis is not None:
+        raise TypeError("axis类型应该为整形")
+
+    # 判断要归一化的维度，计算最大值和最小值
+    data_max = data_min = 0
+    if axis is None:
+        data_max = np.max(data)
+        data_min = np.min(data)
+    else:
+        data_max = np.max(data, axis=axis)
+        data_min = np.min(data, axis=axis)
+
+    # 归一化数据
+    data = (data - data_min) / (data_max - data_min)
+    return data.tolist() if listFlag else data
+</pre>
+<pre id="code_split_dataset" style="display:none">
+def split_dataset(xdata, ydata, valid_size=0.2, test_size=0.2, shuffle=True, random_state=None):
+    '''
+    Desc：
+        对数据集进行划分，分为训练集、验证集、测试集
+    Args：
+        xdata: ndarray  --  所有的特征集
+        ydata: ndarray  --  所有的label
+        valid_size: float/int  --  验证集占所有数据的比例，如果为int则是样本数
+        test_size: float/int  --  测试集占所有数据的比例，如果为int则是样本数
+        shuffle: boolean  --  是否需要将数据集打乱后划分
+        random_state:  --  如果是整形，则作为随机数种子，如果是随机状态实例，则作为随机数生成器使用，默认None，调用`np.random`
+    Returns：
+        x_train, x_val, x_test, y_train, y_val, y_test: ndarray  --  划分好的训练集、验证集、测试集
+    '''
+    # 异常处理
+    if type(valid_size) is float:
+        if valid_size > 1 or valid_size < 0:
+            raise ValueError("float类型valid_size必须在0到1之间")
+    elif type(valid_size) is int:
+        if valid_size < 0 or valid_size > len(xdata):
+            raise ValueError("int类型valid_size必须在0到样本总数之间")
+    else:
+        raise TypeError("valid_size类型错误")
+
+    if type(test_size) is float:
+        if test_size > 1 or test_size < 0:
+            raise ValueError("float类型test_size必须在0到1之间")
+    elif type(test_size) is int:
+        if test_size < 0 or test_size > len(xdata):
+            raise ValueError("int类型test_size必须在0到样本总数之间")
+    else:
+        raise TypeError("test_size类型错误")
+
+    # 划分出测试集
+    x_train = x_val = x_test = y_train = y_test = y_val = []
+    if test_size == 0:
+        x_train, y_train = xdata, ydata
+    else:
+        x_train, x_test, y_train, y_test = train_test_split(xdata, ydata, test_size=test_size, shuffle=shuffle, random_state=random_state)
+
+    # 划分出训练集和验证集
+    if valid_size != 0:
+        valid_size = valid_size / (1 - test_size)
+        x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=valid_size, shuffle=shuffle, random_state=random_state)
+    return x_train, x_val, x_test, y_train, y_val, y_test
+</pre>
+<pre id="code_EmbeddedTextDataset" style="display:none">
+class EmbeddedTextDataset(tud.Dataset):
+    def __init__(self, xdata, ydata, word_to_idx=None, idx_to_word=None, max_vocab_size=None, encode_label=False):
+        '''
+        Desc：
+            对文本数据进行情感分类或者其他预测任务时，进行通用的Word Embedding编码，并将数据封装成Dataset
+        Args：
+            xdata: ndarray(N,  ) -- 所有的数据，字符串
+            ydata: ndarray -- 可能存在的对应目标值，如positive和negative的情感标签
+            word_to_idx: dict  --  可选的word到idx的对应关系字典
+            idx_to_word: list/ndarray  --  可选的idx到word的对应关系列表
+                                        若不存在word_to_idx和idx_to_word，则会自动生成
+            max_vocab_size: int  --  最大的字典长度
+            encoded_data: ndarray -- 编码后的文本数据
+        '''
+        super(EmbeddedTextDataset, self).__init__()
+        # 异常处理：判断xdata和ydata长度是否一致
+        if len(xdata) != len(ydata):
+            raise ValueError("xdata长度和ydata长度必须一致")
+        if type(xdata) != np.ndarray:
+            xdata = np.array(xdata)
+        if type(ydata) != np.ndarray:
+            ydata = np.array(ydata)
+        if len(xdata.flatten().shape) > 1:
+            raise ValueError("xdata只能为待编码文本序列的一维数据")
+        ydata = ydata.flatten()
+
+        # 获取词汇和下标的互相对应关系
+        if word_to_idx is None and idx_to_word is None:
+            self.idx_to_word, self.word_to_idx = self.get_vocab(xdata, vocab_size=max_vocab_size, use_unk=True, use_pad=True)
+            # <pad>和<unk>标记的下标
+            self.pad_idx = self.word_to_idx['<pad>']
+            self.unk_idx = self.word_to_idx['<unk>']
+        elif word_to_idx is None and idx_to_word is not None:
+            self.idx_to_word = idx_to_word
+            self.word_to_idx = dict()
+            for i, word in enumerate(idx_to_word):
+                self.word_to_idx[word] = i
+        elif word_to_idx is not None and idx_to_word is None:
+            itm = list(word_to_idx.items())
+            itm = sorted(itm, key=lambda w: w[1])
+            self.idx_to_word = [w for (w, i) in itm]
+            self.word_to_idx = word_to_idx
+        else:
+            self.idx_to_word = idx_to_word
+            self.word_to_idx = word_to_idx
+
+        # label的词典
+        if encode_label:
+            self.label_to_idx, self.idx_to_label = self.get_vocab(ydata, use_unk=False, use_pad=False)
+        else:
+            self.label_to_idx, self.idx_to_label = self.get_vocab(ydata, use_unk=False, use_pad=False)
+
+        # 对较短的句子进行补全
+        self.max_length = max([len(x) for x in xdata])
+        self.encoded_data = np.zeros((xdata.shape[0], self.max_length), dtype=int)
+
+        # 对label编码
+        if encode_label:
+            self.encoded_label = np.zeros(len(ydata))
+            for i in range(ydata.shape[0]):
+                self.encoded_label[i] = self.label_to_idx[ydata[i]]
+        else:
+            self.encoded_label = ydata
+
+        # 对数据编码
+        for i in range(xdata.shape[0]):
+            xlen = len(xdata[i])
+            for j in range(self.max_length):
+                self.encoded_data[i][j] = self.word_to_idx["<pad>"] if j>=xlen else self.word_to_idx[xdata[i][j]]
+
+    def __len__(self):
+        '''
+        Desc：
+            返回数据集样本总数
+        '''
+        return self.encoded_label.shape[0]
+
+    def __getitem__(self, idx):
+        '''
+        Desc：
+            返回idx对应的序列编码结果
+        Args:
+            idx -- 检索的序列下标
+        Returns：
+            encoded_data[idx], encoded_label[idx] -- 对应编码数据和label
+        '''
+        return self.encoded_data[idx], self.encoded_label[idx]
+
+    def get_vocab(self, data, vocab_size=None, use_unk=True, use_pad=False):
+    '''
+    Desc：
+        对data进行编码，返回word_to_idx和idx_to_word
+    Args：
+        data: ndarray  --  所有的文本数据，可以是任意维度
+        vocab_size: int  --  最大的字典大小，按照词的出现频率排序，剩下的低频词表示为<unk>
+        use_unk: bool  --  是否使用unk标签表示其余的词
+        use_pad: bool  --  是否使用pad标签
+    Returns：
+        word_to_idx: dict  --  词到下标的对应词典
+        idx_to_word: list  --  下标到词的对应列表
+    '''
+    data = np.array(data).flatten()  # 变为1维向量
+    # 异常处理：如果没有设置最大字典大小，则设为全部
+    if vocab_size is None:
+        vocab_size = len(set(data))
+    self.vocab = dict(Counter(data).most_common(vocab_size))
+
+    # 添加<unk>和<pad>标签
+    if use_unk:
+        self.vocab["<unk>"] = len(data) - np.sum(list(self.vocab.values()))
+    if use_pad:
+        self.vocab["<pad>"] = 0
+
+    # 获得词和下标的对应关系并返回
+    idx_to_word = [word for word in self.vocab.keys()]
+    word_to_idx = {word: i for i, word in enumerate(idx_to_word)}
+    return idx_to_word, word_to_idx
+</pre>
+<pre id="code_get_idx_base" style="display:none">
+def get_idx_base(motif=1):
+    '''
+    Desc：
+        获取siRNA的motif和对应编码的下标，用于词向量编码，每次调用参数相同，则结果相同
+    Args：
+        motif(int/list/ndarray) -- 1，2...，可以是单个的motif，也可以是一个列表一起编码
+    Returns：
+        idx_to_base(list), base_to_idx(dict) -- 词和下标的相互转换
+    '''
+    # 异常处理
+    if type(motif) not in [int, list, np.ndarray]:
+        raise TypeError("motif类型必须为整形、list或ndarray")
+    if type(motif) in [list, np.ndarray]:
+        if min(motif) < 1:
+            raise ValueError("motif数值必须为正整数")
+        max_motif = max(motif)
+    else:
+        max_motif = motif
+
+    # 碱基词典
+    vocab = ['A', 'G', 'U', 'C', 'T']
+    res = []
+    tmp_res = vocab.copy()
+    single_motif = [vocab]
+
+    # 对多维motif进行处理
+    while (max_motif > 1):
+        max_motif -= 1
+        tmp = []
+        for w in vocab:
+            for x in tmp_res:
+                tmp.append(w + x)
+        tmp_res = tmp.copy()
+        single_motif.append(tmp_res)
+
+    # 计算motif和对应下标的关系并返回
+    if type(motif) in [list, np.ndarray]:
+        for m in motif:
+            res.extend(single_motif[m - 1])
+        idx_to_base = [base for base in res]
+        base_to_idx = {base: i for i, base in enumerate(idx_to_base)}
+    else:
+        idx_to_base = [base for base in single_motif[motif - 1]]
+        base_to_idx = {base: i for i, base in enumerate(idx_to_base)}
+    return idx_to_base, base_to_idx
+</pre>
+<pre id="code_idx_to_seq" style="display:none">
+def idx_to_seq(seqs, motif=1):
+    '''
+    Desc：
+        将idx形式的序列转化为字符串
+    Args：
+        seqs: tensor(batch_size, seq_size) -- 序列的idx编码表示
+        motif: int/list/ndarray -- 最大的motif大小，默认为1
+    Returns：
+        res: ndarray(batch_size, ) -- 列表形式的字符串序列
+    '''
+    # 异常处理
+    if type(motif) not in [int, list, np.ndarray]:
+        raise TypeError("motif类型必须为整形、list或ndarray")
+    if type(motif) in [list, np.ndarray]:
+        if min(motif) < 1:
+            raise ValueError("motif数值必须为正整数")
+    if type(seqs) == list:
+        seqs = np.array(seqs)
+    if type(seqs) not in [list, np.ndarray, torch.tensor, torch.Tensor]:
+        print(type(seqs))
+        raise TypeError("seqs 类型只支持list, ndarray和tensor")
+    # 把维度扩充为2维
+    if len(seqs.shape) == 1 :
+        if type(seqs) == np.ndarray:
+            seqs = np.expand_dims(seqs, axis=0)
+        elif type(seqs) == torch.tensor:
+            seqs = seqs.unsqueeze(0)
+    elif len(seqs.shape) != 2:
+        raise ValueError("seqs 只能为1维数据或二维数据")
+
+    # 获取motif和下标对应关系
+    res = np.empty((seqs.shape[0], ), dtype=object)
+    idx_to_base, _ = get_idx_base(motif)
+
+    # 对序列字符串进行拼接
+    for i, seq in enumerate(seqs):
+        res[i] = ''.join([idx_to_base[i] for i in seq])
+    return res
+</pre>
+<pre id="code_get_seq_motif" style="display:none">
+def get_seq_motif(seqs, motif=1):
+    '''
+    Desc：
+        获取各个序列所有的motif，并返回各个motif对应的idx
+    Args：
+        seqs: list/ndarray_object(batch_size, ) -- 输入的字符串序列，可以是batch_size个也可以是单个
+        motif: int/list/ndarray -- 单个的motif大小或motif的列表
+    Returns：
+        res: list(ndarray) -- seq各个motif的idx
+    '''
+    # 异常处理
+    if type(motif) not in [int, list, np.ndarray]:
+        raise TypeError("motif类型必须为整形、list或ndarray")
+    if type(motif) in [list, np.ndarray]:
+        if min(motif) < 1:
+            raise ValueError("motif数值必须为正整数")
+    if type(seqs) == str:
+        seqs = [seqs]
+    if type(seqs) == list:
+        seqs = np.array(seqs)
+
+    # 保证全部大写
+    for i, s in enumerate(seqs):
+        seqs[i] = seqs[i].upper()
+
+    res = []
+    _, base_to_idx = get_idx_base(motif=motif)
+
+    # 从小到大循环得到所有的motif
+    if type(motif) in [list, np.ndarray]:
+        nlist = np.array(motif)-1
+    elif type(motif) == int:
+        nlist = [motif-1]
+    for n in nlist:
+        seq_motif = np.empty((seqs.shape[0], len(seqs[0]) - n), dtype=int)
+        for i in range(seqs.shape[0]):
+            for j in range(len(seqs[0]) - n):
+                seq_motif[i][j] = base_to_idx[seqs[i][j:j + n + 1]]
+        res.append(seq_motif)
+    return res
+</pre>
+<pre id="code_filter_sirna" style="display:none">
+def filter_sirna(data=None):
+    '''
+    Desc：
+        从data中获取只包含A/a, G/g, U/u, C/c, T/t的21bp的siRNA序列数据，
+    Args：
+        data:DataFrame/ndarray/list  --  待处理数据
+    Returns：
+        sirna:ndarray  --  提取出的siRNA数据
+    '''
+    # 异常处理
+    if data is None:
+        raise ValueError("data不可为空")
+    if type(data) not in [pd.DataFrame, np.ndarray, list]:
+        raise ValueError("data只允许DataFrame，ndarray和list三种类型")
+
+    # 统一成DataFrame
+    if type(data) != pd.DataFrame:
+        data = pd.DataFrame(data)
+    # 从DataFrame变成Series
+    data = data.iloc[:, 0]
+    # 所有序列大写
+    data = data.str.upper()
+
+    # 去掉所有空格,5'和3',r-和d-等无用字符
+    chr_list = [' ', '5', '3', "'", "’", "′", "`", "[", "]", "r", "D", "d", chr(65313), chr(65319), chr(65333), "(", ")", "-", "–", '"', 'N', 'n', 'v', 'V']
+    data = data_util.char_remove(data, chr_list)
+
+    seq_len = data.str.len()
+    sirna = data[seq_len == 21]
+    return sirna.values
+</pre>
+<pre id="code_train" style="display:none">
+def train(model, iterator, optimizer, criterion, device='cpu'):
+    '''
+    Desc：
+        用于训练模型的函数，返回训练的平均epoch误差
+    Args：
+        model: torch.nn.model  --  待训练的模型
+        iterator  --  包含x和y的dataloader
+        optimizer  --  优化器
+        criterion  --  损失函数
+        device  --  指定的设备，可以是'cpu'或'cuda'
+    Returns：
+        loss: float  --  每个epoch的平均损失
+    '''
+    # 设置model的状态为train
+    model.train()
+    epoch_loss = 0
+
+    # x: tensor[batch_size, seq_size]，每个样本的词的idx，y: 对应label
+    for i, (x, y) in enumerate(iterator):
+        x, y = x.to(DEVICE), y.to(DEVICE)
+        # 在BP之前需要zero_grad，将之前的梯度置零
+        optimizer.zero_grad()
+        predictions = model(x).view(-1, 1)
+        # 计算loss并且backward
+        loss = criterion(predictions.flatten().to(DEVICE), y.to(DEVICE))
+        loss.backward()
+        optimizer.step()
+        epoch_loss += loss.item()
+    return epoch_loss / len(iterator)
+</pre>
+<pre id="code_evaluate" style="display:none">
+def evaluate(model, iterator, criterion, device='cpu', pcc=False, acc=False):
+    '''
+    Desc：
+        测试模型的函数，返回验证集的平均epoch误差
+    Args：
+        model: torch.nn.model  --  带验证的模型
+        iterator: dataloader  --  用于验证模型的数据集
+        criterion  --  损失函数
+        device  --  运行的设备，可以是'cpu'或'cuda'
+    Returns：
+        res  --  保存loss和可选的pcc，acc，调用时，使用loss、pcc和acc分别赋值
+    '''
+    # 设置model状态为evaluate
+    model.eval()
+    epoch_loss = 0.
+    epoch_pcc = 0.
+    epoch_acc = 0.
+    # 验证时不用计算梯度，也不用BP
+    with torch.no_grad():
+        for i, (x, y) in enumerate(iterator):
+            x, y = x.to(DEVICE), y.to(DEVICE)
+            predictions = model(x)
+
+            # 计算Loss
+            loss = criterion(predictions.flatten().to(DEVICE), y.to(DEVICE))
+            epoch_loss += loss.item()
+
+            # 计算相关系数PCC
+            tmp_r, _ = scipy.stats.pearsonr(y.view(-1).cpu().numpy(), predictions.view(-1).cpu().numpy())
+            epoch_pcc += tmp_r
+
+            # 计算准确度ACC
+            tmp_acc = np.sum(predictions.view(-1).cpu().numpy() == y.view(-1).cpu().numpy())*1.0/predictions.shape[0]
+            epoch_acc += tmp_acc
+
+    # 返回对应数据
+    res = [epoch_loss / len(iterator)]
+    if pcc:
+        res.append(epoch_pcc / len(iterator))
+    if acc:
+        res.append(epoch_acc / len(iterator))
+    return res
+</pre>
+<pre id="code_Word2vecModel" style="display:none">
+class Word2vecModel(nn.Module):
+    def __init__(self, vocab_size, embed_size):
+        ''' 初始化输出和输出embedding
+        '''
+        super(Word2vecModel, self).__init__()
+        self.vocab_size = vocab_size
+        self.embed_size = embed_size
+
+        initrange = 0.5 / self.embed_size
+        self.out_embed = nn.Embedding(self.vocab_size,
+                                      self.embed_size,
+                                      sparse=False)
+        self.out_embed.weight.data.uniform_(-initrange, initrange)
+
+        self.in_embed = nn.Embedding(self.vocab_size,
+                                     self.embed_size,
+                                     sparse=False)
+        self.in_embed.weight.data.uniform_(-initrange, initrange)
+
+    def forward(self, input_labels, pos_labels, neg_labels):
+        '''
+        input_labels: 中心词, [batch_size]
+        pos_labels: 中心词周围 context window 出现过的单词 [batch_size, (window_size * 2)]
+        neg_labelss: 中心词周围没有出现过的单词，从 negative sampling 得到 [batch_size, (window_size * 2 * K)]
+        return: loss, [batch_size]
+        '''
+        batch_size = input_labels.size(0)
+
+        input_embedding = self.in_embed(input_labels)  # B * embed_size
+        pos_embedding = self.out_embed(pos_labels)  # B * (2*C) * embed_size
+        neg_embedding = self.out_embed(
+            neg_labels)  # B * (2*C * K) * embed_size
+
+        log_pos = torch.bmm(
+            pos_embedding, input_embedding.unsqueeze(2)).squeeze()  # B * (2*C)
+        log_neg = torch.bmm(
+            neg_embedding,
+            -input_embedding.unsqueeze(2)).squeeze()  # B * (2*C*K)
+
+        # 对loss平均处理
+        log_pos = F.logsigmoid(log_pos).sum(1) / log_pos.shape[1]
+        log_neg = F.logsigmoid(log_neg).sum(1) / log_neg.shape[1]  # batch_size
+        # log_pos = F.logsigmoid(log_pos).sum(1)
+        # log_neg = F.logsigmoid(log_neg).sum(1)  # batch_size
+
+        loss = log_pos + log_neg  #[batchsize]
+        return -loss
+
+    def get_input_embeddings(self):
+        return self.in_embed.weight.data.cpu().numpy()
+</pre>
+<pre id="code_MultiMotifLSTMModel" style="display:none">
+class MultiMotifLSTMModel(nn.Module):
+    def __init__(self,
+                 vocab_size,
+                 embedding_dim,
+                 hidden_dim,
+                 output_dim,
+                 n_layers=1,
+                 bidirectional=False,
+                 dropout=0,
+                 avg_hidden=True,
+                 motif=[1, 2, 3],
+                 loadvec =True,
+                 device='cpu'):
+        '''
+        Desc：
+            初始化模型，定义一些网络层级
+        Args：
+            vocab_size: int -- 5，即[A, G, U, C, T]
+            embedding_dim: int -- 词向量的维度
+            hidden_dim: int -- LSTM层hidden的维度
+            output_dim: int -- 输出的维度
+            n_layers: int -- LSTM的层数
+            bidirectional: bool -- LSTM是否双向
+            dropout: float -- drouput概率，使用在LSTM和Dropout层
+            avg_hidden: bool -- 是否将hidden的平均值作为结果输出，如果是False，则使用最后一个Hidden作为LSTM的输出
+        '''
+        super(MultiMotifLSTMModel, self).__init__()
+        self.bidirectional = bidirectional
+        self.avg_hidden = avg_hidden
+        self.motif = motif
+        # 如果motif是整数，则赋1，如果为 list 则为长度
+        self.motif_num = 1 if type(motif) == int else len(motif)
+        self.pre_output_dim = hidden_dim * 2 if self.bidirectional else hidden_dim
+        self.device = device
+
+        self.input_embed_1 = nn.Embedding(vocab_size[0], embedding_dim[0])
+        if loadvec:
+            embed_1 = np.load('./embedding/motif-1/embedding-E100-C1-K1.npy')
+            self.input_embed_1.weight.data.copy_(torch.from_numpy(embed_1))
+
+        self.lstm_1 = nn.LSTM(embedding_dim[0],
+                              hidden_dim,
+                              num_layers=n_layers,
+                              batch_first=True,
+                              bidirectional=bidirectional,
+                              dropout=(dropout if n_layers > 1 else 0))
+        self.fc1_1 = nn.Linear(self.pre_output_dim, self.pre_output_dim)
+        self.bn_1 = nn.BatchNorm1d(self.pre_output_dim)
+        self.fc2_1 = nn.Linear(self.pre_output_dim, output_dim)
+
+        self.input_embed_2 = nn.Embedding(vocab_size[1], embedding_dim[1])
+        if loadvec:
+            embed_2 = np.load('./embedding/motif-2/embedding-E25-C1-K1.npy')
+            self.input_embed_2.weight.data.copy_(torch.from_numpy(embed_2))
+
+        self.lstm_2 = nn.LSTM(embedding_dim[1],
+                              hidden_dim,
+                              num_layers=n_layers,
+                              batch_first=True,
+                              bidirectional=bidirectional,
+                              dropout=(dropout if n_layers > 1 else 0))
+        self.fc1_2 = nn.Linear(self.pre_output_dim, self.pre_output_dim)
+        self.bn_2 = nn.BatchNorm1d(self.pre_output_dim)
+        self.fc2_2 = nn.Linear(self.pre_output_dim, output_dim)
+
+        self.input_embed_3 = nn.Embedding(vocab_size[2], embedding_dim[2])
+        if loadvec:
+            embed_3 = np.load('./embedding/motif-3/embedding-E200-C1-K2.npy')
+            self.input_embed_2.weight.data.copy_(torch.from_numpy(embed_2))
+
+        self.lstm_3 = nn.LSTM(embedding_dim[2],
+                              hidden_dim,
+                              num_layers=n_layers,
+                              batch_first=True,
+                              bidirectional=bidirectional,
+                              dropout=(dropout if n_layers > 1 else 0))
+        self.fc1_3 = nn.Linear(self.pre_output_dim, self.pre_output_dim)
+        self.bn_3 = nn.BatchNorm1d(self.pre_output_dim)
+        self.fc2_3 = nn.Linear(self.pre_output_dim, output_dim)
+
+        self.relu = nn.ReLU(inplace=True)
+        self.leaky_relu = nn.LeakyReLU(0.1, inplace=True)
+        self.dropout = nn.Dropout(dropout)
+
+        self.fc3 = nn.Linear(self.motif_num, output_dim)
+
+        self.bn4 = nn.BatchNorm1d(self.pre_output_dim * self.motif_num)
+        self.fc4 = nn.Linear(self.pre_output_dim * self.motif_num, self.pre_output_dim)
+        self.bn5 = nn.BatchNorm1d(self.pre_output_dim)
+        self.fc5 = nn.Linear(self.pre_output_dim, output_dim)
+
+        self.fc6 = nn.Linear(self.pre_output_dim * self.motif_num, hidden_dim)
+        self.bn6 = nn.BatchNorm1d(hidden_dim)
+        self.fc7 = nn.Linear(hidden_dim, output_dim)
+
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, seq):
+        '''
+        Desc：
+            Forward pass
+        Args：
+            seq: tensor(batch_size, seq_size) -- 输入的序列
+        Returns：
+            output: tensor(batch_size, output_dim=1) -- Predicted value
+        '''
+        seq = seq.long().to(self.device)
+        embed_seq_1 = self.dropout(self.input_embed_1(seq))  # [batch_size, seq_size, embed_size]
+        seqs = idx_to_seq(seq, self.motif)
+        seq_motif1 = get_seq_motif(seqs, self.motif[1])[0]
+        seq_motif2 = get_seq_motif(seqs, self.motif[2])[0]
+        seq_motif1 = torch.tensor(seq_motif1).long().to(self.device)
+        seq_motif2 = torch.tensor(seq_motif2).long().to(self.device)
+        # embed_seq_2 = self.dropout(self.input_embed_2(seq_motif[1]))
+        embed_seq_2 = self.input_embed_2(seq_motif1)
+        embed_seq_3 = self.dropout(self.input_embed_3(seq_motif2))
+
+        # lstm_output: [batch size, seq_len, hid dim * num directions]
+        #hidden, cell: [num layers * num directions, batch size, hidden_dim]
+        lstm_output_1, (hidden_1, cell_1) = self.lstm_1(embed_seq_1)
+        lstm_output_2, (hidden_2, cell_2) = self.lstm_2(embed_seq_2)
+        lstm_output_3, (hidden_3, cell_3) = self.lstm_3(embed_seq_3)
+
+        # hidden: [batch_size, hidden_dim * num_directions]
+        hidden_1 = self.handle_hidden(lstm_output_1, hidden_1)
+        hidden_2 = self.handle_hidden(lstm_output_2, hidden_2)
+        hidden_3 = self.handle_hidden(lstm_output_3, hidden_3)
+
+        # concatenate hidden, [batch_size, pre_output_dim*motif]
+        hidden = torch.cat((hidden_1, hidden_2, hidden_3), dim=1)
+        # hidden = self.bn4(hidden)
+        # [batch_size, pre_output_dim*motif] -> [batch_size, hidden_dim]
+        pre_output = self.leaky_relu(self.bn6(self.fc6(hidden)))
+        pre_output = self.dropout(pre_output)
+        # hidden_dim -> output_dim
+        output = self.fc7(pre_output)
+        return output
+                 vocab_size,
+                 embedding_dim,
+                 hidden_dim,
+                 output_dim,
+                 n_layers=1,
+                 bidirectional=False,
+                 dropout=0,
+                 avg_hidden=True,
+                 device='cpu'):
+        '''
+        Desc：
+            初始化单一输入LSTM模型，定义一些网络层级
+        Args：
+            vocab_size: int -- 5，即[A, G, U, C, T]
+            embedding_dim: int -- 词向量的维度
+            hidden_dim: int -- LSTM层hidden的维度
+            output_dim: int -- 输出的维度
+            n_layers: int -- LSTM的层数
+            bidirectional: bool -- LSTM是否双向
+            dropout: float -- drouput概率，使用在LSTM和Dropout层
+            avg_hidden: bool -- 是否将hidden的平均值作为结果输出，如果是False，则使用最后一个Hidden作为LSTM的输出
+        '''
+        super(EmbeddingLSTMModel, self).__init__()
+        self.bidirectional = bidirectional
+        self.avg_hidden = avg_hidden
+        self.pre_output_dim = hidden_dim * 2 if self.bidirectional else hidden_dim
+        self.device = device
+
+        self.input_embed = nn.Embedding(vocab_size, embedding_dim)
+        self.lstm = nn.LSTM(embedding_dim,
+                            hidden_dim,
+                            num_layers=n_layers,
+                            batch_first=True,
+                            bidirectional=bidirectional,
+                            dropout=(dropout if n_layers > 1 else 0))
+        self.fc1 = nn.Linear(self.pre_output_dim, self.pre_output_dim)
+        self.bn = nn.BatchNorm1d(self.pre_output_dim)
+        self.relu = nn.ReLU(inplace=True)
+        self.dropout = nn.Dropout(dropout)
+        self.fc2 = nn.Linear(self.pre_output_dim, output_dim)
+
+    def forward(self, seq):
+        '''
+        Desc：
+            Forward pass
+        Args：
+            seq: tensor(batch_size, seq_size) -- 输入的序列
+        Returns：
+            output: tensor(batch_size, output_dim=1) -- Predicted value
+        '''
+        # embed_seq: [batch_size, seq_size, embed_size]
+        seq = seq.long().to(self.device)
+        embed_seq = self.dropout(self.input_embed(seq))
+        #lstm_output: [batch size, seq_len, hid dim * num directions]
+        #hidden, cell: [num layers * num directions, batch size, hidden_dim]
+        lstm_output, (hidden, cell) = self.lstm(embed_seq)
+
+        if self.avg_hidden:
+            hidden = torch.sum(lstm_output, 1) / lstm_output.size(1)
+        else:
+            if self.bidirectional:
+                hidden = torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1)
+            else:
+                # hidden = self.dropout(hidden[-1, :, :])
+                hidden = hidden[-1, :, :]
+
+        # hidden: [batch_size, hidden_dim * num_directions]
+        # hidden = self.dropout(hidden)
+        pre_output = self.relu(self.bn(self.fc1(hidden)))
+        pre_output = self.dropout(pre_output)
+        output = self.fc2(pre_output)
+        # return: [batch_size, output_dim]
+        return output
+</pre>
+<pre id="code_EmbeddingLSTMModel" style="display:none">
+class EmbeddingLSTMModel(nn.Module):
+    def __init__(self,
+                 vocab_size,
+                 embedding_dim,
+                 hidden_dim,
+                 output_dim,
+                 n_layers=1,
+                 bidirectional=False,
+                 dropout=0,
+                 avg_hidden=True,
+                 device='cpu'):
+        '''
+        Desc：
+            初始化单一输入LSTM模型，定义一些网络层级
+        Args：
+            vocab_size: int -- 5，即[A, G, U, C, T]
+            embedding_dim: int -- 词向量的维度
+            hidden_dim: int -- LSTM层hidden的维度
+            output_dim: int -- 输出的维度
+            n_layers: int -- LSTM的层数
+            bidirectional: bool -- LSTM是否双向
+            dropout: float -- drouput概率，使用在LSTM和Dropout层
+            avg_hidden: bool -- 是否将hidden的平均值作为结果输出，如果是False，则使用最后一个Hidden作为LSTM的输出
+        '''
+        super(EmbeddingLSTMModel, self).__init__()
+        self.bidirectional = bidirectional
+        self.avg_hidden = avg_hidden
+        self.pre_output_dim = hidden_dim * 2 if self.bidirectional else hidden_dim
+        self.device = device
+
+        self.input_embed = nn.Embedding(vocab_size, embedding_dim)
+        self.lstm = nn.LSTM(embedding_dim,
+                            hidden_dim,
+                            num_layers=n_layers,
+                            batch_first=True,
+                            bidirectional=bidirectional,
+                            dropout=(dropout if n_layers > 1 else 0))
+        self.fc1 = nn.Linear(self.pre_output_dim, self.pre_output_dim)
+        self.bn = nn.BatchNorm1d(self.pre_output_dim)
+        self.relu = nn.ReLU(inplace=True)
+        self.dropout = nn.Dropout(dropout)
+        self.fc2 = nn.Linear(self.pre_output_dim, output_dim)
+
+    def forward(self, seq):
+        '''
+        Desc：
+            Forward pass
+        Args：
+            seq: tensor(batch_size, seq_size) -- 输入的序列
+        Returns：
+            output: tensor(batch_size, output_dim=1) -- Predicted value
+        '''
+        # embed_seq: [batch_size, seq_size, embed_size]
+        seq = seq.long().to(self.device)
+        embed_seq = self.dropout(self.input_embed(seq))
+        #lstm_output: [batch size, seq_len, hid dim * num directions]
+        #hidden, cell: [num layers * num directions, batch size, hidden_dim]
+        lstm_output, (hidden, cell) = self.lstm(embed_seq)
+
+        if self.avg_hidden:
+            hidden = torch.sum(lstm_output, 1) / lstm_output.size(1)
+        else:
+            if self.bidirectional:
+                hidden = torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1)
+            else:
+                # hidden = self.dropout(hidden[-1, :, :])
+                hidden = hidden[-1, :, :]
+
+        # hidden: [batch_size, hidden_dim * num_directions]
+        # hidden = self.dropout(hidden)
+        pre_output = self.relu(self.bn(self.fc1(hidden)))
+        pre_output = self.dropout(pre_output)
+        output = self.fc2(pre_output)
+        # return: [batch_size, output_dim]
+        return output
+</pre>
+<pre id="code_WordAVGModel" style="display:none">
+class WordAVGModel(nn.Module):
+    def __init__(self, vocab_size, embedding_dim, output_dim, dropout=0.5):
+        super().__init__()
+        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        self.fc1 = nn.Linear(embedding_dim,
+                             int((embedding_dim + output_dim) / 2))
+        self.fc2 = nn.Linear(int((embedding_dim + output_dim) / 2), output_dim)
+        self.dropout = nn.Dropout(dropout)
+
+    ''' seq: [batch_size, seq_size]'''
+
+    def forward(self, text):
+        embedded = self.embedding(text.long().to('cuda'))  # [batch_size,seq_len,emb_dim]
+        pooled = F.avg_pool2d(
+            embedded,
+            (embedded.shape[1], 1)).squeeze()  # batch_size, embed_size
+        output = self.dropout(self.fc1(pooled))
+        return self.fc2(output)
+</pre>
+<pre id="code_WordAVGModel" style="display:none">
+def count_parameters(model=None):
+    '''
+    Desc：
+        计算模型中参数个数
+    Args：
+        model  --  待参数计数的模型
+    Returns：
+        res  --  model中参数的个数
+    '''
+    if model is None:
+        raise ValueError("model不可为空")
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+</pre>
+<pre id="code_get_data_from_file" style="display:none">
+def get_data_from_file(fpath, xname=None, yname=None, upper=False, dropna=True, encode='utf-8'):
+    '''
+    Desc：
+        使用于大部分情况的Excel文件数据提取，从csv/excel(xls,xlsx,xlsm..)/txt格式的文件中提取训练数据和可能存在的label
+    Args：
+        fpath: str  --  文件路径
+        xname: list or str  --  数据列名，如果为None，则为全部
+        yname: list or str  --  标签列名，如果为None，则视为无，如果xname为None，yname不为None，yname依然生效
+        upper: bool  --  是否对所有的数据进行大写转换
+        dropna: bool  --  是否丢弃缺失值所在行
+        encode: str  --  读取后的编码方式，默认utf-8
+    Returns：
+        x, y: ndarray(-1,1)  --  训练数据和对应标签
+    '''
+    path = sys.path[0]
+    fpath = os.path.join(path, fpath)
+    file_type = fpath.split('.')[-1]
+    raw_data = pd.DataFrame()
+
+    # 判断文件类型
+    try:
+        if file_type == 'csv':
+            raw_data = pd.read_csv(fpath, encoding=encode)
+        elif file_type == 'txt':
+            raw_data = pd.read_csv(fpath, sep=' ', encoding=encode)
+        elif file_type in ['xls', 'xlsx', 'xlsm', 'xlsb', 'odf']:
+            raw_data = pd.read_excel(fpath)
+    except Exception as e:
+        raise e
+
+    # 对要读取的数据内容进行分析
+    data = pd.DataFrame()
+    if xname is None:
+        xname = raw_data.columns.values.tolist()
+    else:
+        xname = [xname] if type(xname) != list else xname
+    if yname is None:
+        yname = []
+    else:
+        yname = [yname] if type(yname) != list else yname
+
+    # 获取要读取的数据
+    data = raw_data[xname + yname]  # DataFrame
+    data = data.dropna(axis=0) if dropna else data
+
+    # 区分X和Y并返回
+    # x, y = data[xname].values.squeeze(), data[yname].values.squeeze()  # DataFrame
+    x, y = data[xname], data[yname]  # DataFrame
+    if upper:
+        for i in x.columns:
+            if type(x.loc[0, i]) is str:
+                x.loc[:, i] = x.loc[:, i].str.upper()
+                # x[i] = x[i].str.upper()
+    x, y = x.values.squeeze(), y.values.squeeze()
+    return x, y
+</pre>
+<pre id="code_write_csv_excel" style="display:none">
+def write_csv_excel(data, fpath, columns=None, header=False, sheet_name=None, nan_rep='NULL', encoding=None):
+    '''
+    Desc：
+        将序列数据写入csv文件，默认不写入DataFrame的index和header
+    Args：
+        data:DataFrame/ndarray/list -- ndarray格式数据
+        fpath -- 写入文件路径或文件流，文件类型可以是csv，xlsx，txt
+        columns -- 可选的列
+        header -- 是否要写入列名
+        sheet_name -- 在写入excel时可选，指定sheet名
+        nan_rep -- 是否要将Nan替换成其他字符串
+    Returns：
+        None -- None
+    '''
+    if type(data) not in [pd.DataFrame, np.ndarray, pd.Series, list]:
+        raise ValueError("data数据类型只支持DataFrame, Series, ndarray和list")
+    data = pd.DataFrame(data)
+    file_type = fpath.split('.')[-1]
+    if file_type == 'csv':
+        data.to_csv(fpath, columns=columns, index=False, header=header, na_rep=nan_rep, encoding=encoding)
+    elif file_type in ['xls', 'xlsx', 'xlsm', 'xlsb', 'odf']:
+        writer = pd.ExcelWriter(fpath)
+        data.to_excel(writer, sheet_name=sheet_name, na_rep=nan_rep, columns=columns, header=header, index=False, encoding=encoding)
+    elif file_type == 'txt':
+        data.to_csv(fpath, sep=' ', columns=columns, index=False, header=header, na_rep=nan_rep, encoding=encoding)
+    else:
+        raise ValueError("写入文件只支持csv, txt, xls, xlsx, xlsm, xlsb, odf")
+</pre>
+<pre id="code_make_scatter" style="display:none">
+def make_scatter(xdata, ydata, xlabel=None, ylabel=None, xtick=None, ytick=None, title=None, error=False, pcc=False, yxline=False, filename=None):
+    '''
+    Desc：
+        在回归任务或分类任务中，绘制预测结果和真实值的散点图，并且保存在本地
+    Args：
+        xdata: ndarray  --  真实值
+        ydata: ndarray  --  预测值
+        xlabel: str  --  x轴的标签
+        ylabel: str  --  y轴的标签
+        xtick: list/ndarray  --  x轴的下标
+        ytick: list/ndarray  --  y轴的下标
+        title: str  --  title内容
+        error: Bool  --  是否计算xdata和ydata的误差，包含平均误差，最大和最小误差
+        pcc: Bool  --  是否计算xdata和ydata的相关系数
+        yxline: Bool  --  是否绘制y=x参考线
+        filename: str  --  保存在本地的路径
+    '''
+    # 异常处理
+    if type(xdata) is not list and type(xdata) is not np.ndarray:
+        raise TypeError("xdata格式需要为list或np.ndarray")
+    if type(ydata) is not list and type(ydata) is not np.ndarray:
+        raise TypeError("ydata格式需要为list或np.ndarray")
+    xdata = np.array(xdata)
+    ydata = np.array(ydata)
+
+    if xlabel is not None and type(xlabel) is not str:
+        xlabel = str(xlabel)
+    if ylabel is not None and type(ylabel) is not str:
+        ylabel = str(ylabel)
+
+    if title is not None and type(title) is not str:
+        title = str(title)
+
+    if xtick is not None and type(xtick) is not list and type(xtick) is not np.ndarray:
+        raise TypeError("xtick格式应该为list或numpy.ndarray")
+    if ytick is not None and type(ytick) is not list and type(ytick) is not np.ndarray:
+        raise TypeError("ytick格式应该为list或numpy.ndarray")
+
+    # 绘制主要部分
+    plt.figure(figsize=[10, 6])
+    plt.scatter(x=xdata, y=ydata, marker='.', c='black', s=16)
+
+    # 绘制xticks和yticks
+    xmax, xmin = np.max(xdata), np.min(xdata)
+    ymax, ymin = np.max(ydata), np.min(ydata)
+    if xtick is None:
+        plt.xticks(np.linspace(start=xmin, stop=xmax, num=11))
+    else:
+        plt.xticks(xtick)
+    if ytick is None:
+        plt.yticks(np.linspace(start=ymin, stop=ymax, num=11))
+    else:
+        plt.yticks(ytick)
+
+    # 绘制y=x参考线
+    if yxline:
+        line_x, line_y = max(xmin, ymin), min(xmax, ymax)
+        plt.plot([line_x, line_y], [line_x, line_y], 'g--', lw=1.5)
+    # 计算误差
+    if error:
+        abs_diff = np.abs(ydata - xdata)
+        avg_diff = np.sum(abs_diff) / xdata.size
+        max_diff = np.max(abs_diff)
+        min_diff = np.min(abs_diff)
+        pos_x = xmin + (xmax - xmin) * 0.8
+        plt.text(pos_x, ymin + (ymax - ymin) * 0.2, 'Average error: {:.3f}'.format(avg_diff))
+        plt.text(pos_x, ymin + (ymax - ymin) * 0.15, 'Max error: {:.3f}'.format(max_diff))
+        plt.text(pos_x, ymin + (ymax - ymin) * 0.1, 'Min error: {:.3f}'.format(min_diff))
+    # 计算相关系数
+    if pcc:
+        r, _ = pearsonr(xdata, ydata)
+        plt.text(pos_x, ymin + (ymax - ymin) * 0.05, 'PCC: {:.3f}'.format(r))
+
+    # 绘制label和title
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+
+    # 保存和显示图
+    if filename is not None:
+        plt.savefig(filename, bbox_inches='tight')
+    plt.show()
+</pre>
+<pre id="code_make_plot" style="display:none">
+def make_plot(data, labels=None, titles=None, filename=None):
+    '''
+    Desc：
+        绘制折线图，可以在一个画布中绘制多张图，并可以保存在本地
+    Args：
+        data: list/ndarray  --  包含所有待绘制的数据
+        labels: list/ndarray  --  包含所有子图中的label
+        titles: list/ndarray  --  包含所有子图的标题
+    Sample:
+        data: [[valid_loss]], valid_loss=[1,2,3]
+        labels: [['Valid_Loss']]
+        titles: [['Loss of Valid Data']]
+
+        data: [[train_epoch_loss, valid_epoch_loss], [valid_r]]
+        labels: [['Train_Loss', 'Val_Loss'], ['Valid_R']]
+        titles: ['Loss of Train and Valid Data', 'PCC of Valid Data']
+    '''
+    # 创建画布
+    fig = plt.figure(figsize=[10, 6])
+    fig.subplots_adjust(hspace=0.6)
+
+    # 对可能缺少的label和title进行补全
+    labels = ['']*len(data) if labels is None else labels
+    titles = ['']*len(data) if titles is None else titles
+    if len(labels) < len(data):
+        labels.extend([''] * (len(data) - len(labels)))
+    if len(titles) < len(data):
+        titles.extend([''] * (len(data) - len(titles)))
+
+    # 迭代每个子图数据
+    for i, fig_data in enumerate(data):
+        label = labels[i]
+        title = titles[i]
+
+        ymax, ymin = np.max(fig_data), np.min(fig_data)
+        xmax, xmin = len(fig_data[0]), 0
+
+        if len(fig_data[0]) > 20:
+            tickNum = (len(fig_data[0]) - len(fig_data[0]) % 5) // 5 + 1
+        else:
+            tickNum = len(fig_data[0]) + 1
+        xtick = np.linspace(xmin, xmax, tickNum, dtype=int).tolist()
+        ytick = np.linspace(ymin, ymax, 11).tolist()
+
+        # 创建子图
+        ax = fig.add_subplot(len(data), 1, i + 1, xlim=(xmin, xmax), ylim=(ymin, ymax), xticks=xtick, yticks=ytick)
+
+        # 绘制每个折线图
+        for j, plt_data in enumerate(fig_data):
+            plt_label = label[j]
+            x = np.arange(0, xmax, step=1)
+            ax.plot(x, plt_data, label=plt_label, marker='.')
+        ax.legend(loc='best')
+        plt.title(title)
+
+    # 保存和显示图
+    if filename is not None:
+        plt.savefig(filename, bbox_inches='tight')
+    plt.show()
+</pre>
+
+    </div>
+
+    <div class="container">
+        <form class="contact" id="form1" enctype="multipart/form-data" onsubmit="upLoadData()">
+
+        <div><!--div outer start-->
+        <div class='outer' id='data_util'><!--outer start用于切换时对div进行遍历-->
+            <div class='inner' id='char_remove' >
+                <div>
+                    <label for="para_data_char_remove">data（用","分隔）</label>
+                    <input class="para" type="text" id="para_data_char_remove" name="data_char_remove" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_chr_list_char_remove">chr_list （用","分隔）</label>
+                    <input class="para" type="text" id="para_chr_list_char_remove" name="chr_list_char_remove" autocomplete="off">
+                </div>
+            </div>
+            <div class='inner' id='cal_time' style="display:none;">
+                <div class="row clearfix">
+                    <label for="para_start_time_cal_time">start time（秒数）</label>
+                    <input class="para" type="text" id="para_start_time_cal_time" name="start_time_cal_time" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_end_time_cal_time">end_time（秒数）</label>
+                    <input class="para" type="text" id="para_end_time_cal_time" name="end_time_cal_tim" autocomplete="off" >
+                </div>
+            </div>
+            <div class='inner' id='copy_part_of_data' style="display:none;">
+                <div class="row clearfix">
+                    <label for="para_xdata_copy_part_of_data">xdata（逗号分隔）</label>
+                    <input class="para" type="text" id="para_xdata_copy_part_of_data" name="xdata_copy_part_of_data" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_ydata_copy_part_of_data">ydata（逗号分隔）</label>
+                    <input class="para" type="text" id="para_ydata_copy_part_of_data" name="ydata_copy_part_of_data" autocomplete="off" >
+                </div>
+                <div >
+                    <label for="para_yrange_copy_part_of_data">yrange（逗号分隔，如"1，2"）</label>
+                    <input class="para" type="text" id="para_yrange_copy_part_of_data" name="yrange_copy_part_of_data" autocomplete="off" >
+                </div>
+                <div class="row clearfix">
+                    <label for="para_copytimes_copy_part_of_data">copytimes</label>
+                    <input class="para" type="text" id="para_copytimes_copy_part_of_data" name="copytimes_copy_part_of_data" autocomplete="off" value="1">
+                </div>
+            </div>
+            <div class='inner' id='truncate_part_of_data' style="display:none;">
+                <div class="row clearfix">
+                    <label for="para_xdata_truncate_part_of_data">xdata（逗号分隔）</label>
+                    <input class="para" type="text" id="para_xdata_truncate_part_of_data" name="xdata_truncate_part_of_data" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_ydata_truncate_part_of_data">ydata（逗号分隔）</label>
+                    <input class="para" type="text" id="para_ydata_truncate_part_of_data" name="ydata_truncate_part_of_data" autocomplete="off" >
+                </div>
+                <div >
+                    <label for="para_yrange_truncate_part_of_data">yrange（逗号分隔）</label>
+                    <input class="para" type="text" id="para_yrange_truncate_part_of_data" name="yrange_truncate_part_of_data" autocomplete="off" >
+                </div>
+            </div>
+            <div class='inner' id='get_sample_freq' style="display:none;">
+                <div>
+                    <label for="para_data_get_sample_freq">data（逗号分隔）</label>
+                    <input class="para" type="text" id="para_data_get_sample_freq" name="data_get_sample_freq" data-required="true" autocomplete="off">
+                </div>
+            </div>
+            <div class='inner' id='standardize_data' style="display:none;">
+                <div>
+                    <label for="para_data_standardize_data">data（逗号分隔）</label>
+                    <input class="para" type="text" id="para_data_standardize_data" name="data_standardize_data" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_axis_standardize_data">axis</label>
+                    <input class="para" type="text" id="para_axis_standardize_data" name="axis_standardize_data" data-required="true" autocomplete="off" value="0">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_std_standardize_data">std</label>
+                    <input class="para" type="text" id="para_std_standardize_data" name="std_standardize_data" data-required="true" autocomplete="off" value="0">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_mean_standardize_data">mean</label>
+                    <input class="para" type="text" id="para_mean_standardize_data" name="mean_standardize_data" data-required="true" autocomplete="off" value="0">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_mean_standardize_data">mean</label>
+                    <input class="para" type="text" id="para_mean_standardize_data" name="mean_standardize_data" data-required="true" autocomplete="off" value="0">
+                </div>
+
+            </div>
+            <div class='inner' id='normalize_data' style="display:none;">
+                <div>
+                    <label for="para_data_normalize_data">data</label>
+                    <input class="para" type="text" id="para_data_normalize_data" name="data_normalize_data" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_axis_normalize_data">axis</label>
+                    <input class="para" type="text" id="para_axis_normalize_data" name="axis_normalize_data" autocomplete="off" value="0">
+                </div>
+            </div>
+            <div class='inner' id='split_dataset' style="display:none;">
+                <div>
+                    <label for="para_xdata_split_dataset">xdata（逗号分隔）</label>
+                    <input class="para" type="text" id="para_xdata_split_dataset" name="xdata_split_dataset" data-required="true" autocomplete="off">
+                </div>
+                <div>
+                    <label for="para_ydata_split_dataset">ydata（逗号分隔）</label>
+                    <input class="para" type="text" id="para_ydata_split_dataset" name="ydata_split_dataset" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_valid_size_split_dataset">valid_size</label>
+                    <input class="para" type="text" id="para_valid_size_split_dataset" name="valid_size_split_dataset" autocomplete="off" value="0.2">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_test_size_split_dataset">test_size</label>
+                    <input class="para" type="text" id="para_test_size_split_dataset" name="test_size_split_dataset" autocomplete="off" value="0.2">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_shuffle_split_dataset">shuffle（'True/False' 或 '0/1'）</label>
+                    <input class="para" type="text" id="para_shuffle_split_dataset" name="shuffle_split_dataset" autocomplete="off" value="True">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_random_state_split_dataset">random_state（int）</label>
+                    <input class="para" type="text" id="para_random_state_split_dataset" name="random_state_split_dataset" autocomplete="off" value="0">
+                </div>
+
+            </div>
+            <div class='inner' id='EmbeddedTextDataset' style="display:none;">
+                <div>
+                    <label for="para_xdata_EmbeddedTextDataset">xdata（逗号分隔）</label>
+                    <input class="para" type="text" id="para_xdata_EmbeddedTextDataset" name="xdata_EmbeddedTextDataset" data-required="true" autocomplete="off">
+                </div>
+                <div>
+                    <label for="para_ydata_EmbeddedTextDataset">ydata（逗号分隔）</label>
+                    <input class="para" type="text" id="para_ydata_EmbeddedTextDataset" name="ydata_EmbeddedTextDataset" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_word_to_idx_EmbeddedTextDataset">word_to_idx（字典，如：a:1,b:2）</label>
+                    <input class="para" type="text" id="para_word_to_idx_EmbeddedTextDataset" name="word_to_idx_EmbeddedTextDataset" autocomplete="off" value="None">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_idx_to_word_EmbeddedTextDataset">idx_to_word（列表，如：a,b）</label>
+                    <input class="para" type="text" id="para_idx_to_word_EmbeddedTextDataset" name="idx_to_word_EmbeddedTextDataset" autocomplete="off" value="None">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_max_vocab_size_EmbeddedTextDataset">max_vocab_size</label>
+                    <input class="para" type="text" id="para_max_vocab_size_EmbeddedTextDataset" name="max_vocab_size_EmbeddedTextDataset" autocomplete="off" value="None">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_encode_label_EmbeddedTextDataset">encode_label（True/False）</label>
+                    <input class="para" type="text" id="para_encode_label_EmbeddedTextDataset" name="encode_label_EmbeddedTextDataset" autocomplete="off" value="False">
+                </div>
+            </div>
+        </div><!--data_util outer end-->
+        <div class='outer' id='sirna_util' style="display:none;"><!--outer start用于切换时对div进行遍历-->
+            <div class='inner' id='get_idx_base' >
+                <div>
+                    <label for="para_motif_get_idx_base">motif（多个则用","分隔）</label>
+                    <input class="para" type="text" id="para_motif_get_idx_base" name="motif_get_idx_base" data-required="true" autocomplete="off">
+                </div>
+            </div>
+            <div class='inner' id='idx_to_seq' >
+                <div>
+                    <label for="para_seqs_idx_to_seq">seqs（用","分隔）</label>
+                    <input class="para" type="text" id="para_seqs_idx_to_seq" name="seqs_idx_to_seq" data-required="true" autocomplete="off">
+                </div>
+                <div>
+                    <label for="para_motif_idx_to_seq">motif（用","分隔）</label>
+                    <input class="para" type="text" id="para_motif_idx_to_seq" name="motif_idx_to_seq" autocomplete="off">
+                </div>
+            </div>
+            <div class='inner' id='get_seq_motif' >
+                <div>
+                    <label for="para_seqs_get_seq_motif">seqs（用","分隔）</label>
+                    <input class="para" type="text" id="para_seqs_get_seq_motif" name="seqs_get_seq_motif" data-required="true" autocomplete="off">
+                </div>
+                <div>
+                    <label for="para_motif_get_seq_motif">motif</label>
+                    <input class="para" type="text" id="para_motif_get_seq_motif" name="motif_get_seq_motif" autocomplete="off">
+                </div>
+            </div>
+            <div class='inner' id='filter_sirna' >
+                <div>
+                    <label for="para_data_filter_sirna">data（多个则用","分隔）</label>
+                    <input class="para" type="text" id="para_data_filter_sirna" name="data_filter_sirna" data-required="true" autocomplete="off">
+                </div>
+            </div>
+        </div><!--sirna_util outer end-->
+        <div class='outer' id='train_util' style="display:none;"><!--outer start用于切换时对div进行遍历-->
+            <div class='inner' id='train' >
+                <div>
+                    <label>Input File: input.csv;  Model: EmbeddingLSTMModel</label>
+                </div>
+                <div class="row clearfix">
+                    <label for="para_xname_train">xname</label>
+                    <input class="para" type="text" id="para_xname_train" name="xname_train" data-required="true" autocomplete="off"
+                    value="Guide strand">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_yname_train">yname</label>
+                    <input class="para" type="text" id="para_yname_train" name="yname_train" data-required="true" autocomplete="off"
+                    value="Normalized inhibitory activity">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_valid_size_train">valid_size </label>
+                    <input class="para" type="text" id="para_valid_size_train" name="valid_size_train" autocomplete="off"
+                    value="0.1">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_test_size_train">test_size </label>
+                    <input class="para" type="text" id="para_test_size_train" name="test_size_train" autocomplete="off"
+                    value="0.1">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_optimizer_train">optimizer </label>
+                    <input class="para" type="text" id="para_optimizer_train" name="optimizer_train" autocomplete="off"
+                    value="Adam">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_learning_rate_train">learning_rate </label>
+                    <input class="para" type="text" id="para_learning_rate_train" name="learning_rate_train" autocomplete="off"
+                    value="0.001">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_criterion_train">criterion </label>
+                    <input class="para" type="text" id="para_criterion_train" name="criterion_train" autocomplete="off"
+                    value="MSELoss">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_epoch_train">epoch </label>
+                    <input class="para" type="text" id="para_epoch_train" name="epoch_train" autocomplete="off"
+                    value="3">
+                </div>
+            </div>
+            <div class='inner' id='evaluate' style="display:none">
+                <div>
+                    <label>Input File: input.csv</label>
+                </div>
+                <div class="row clearfix">
+                    <label for="para_xname_evaluate">xname</label>
+                    <input class="para" type="text" id="para_xname_evaluate" name="xname_evaluate" data-required="true" autocomplete="off"
+                    value="Guide strand">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_yname_evaluate">yname</label>
+                    <input class="para" type="text" id="para_yname_evaluate" name="yname_evaluate" data-required="true" autocomplete="off"
+                    value="Normalized inhibitory activity">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_valid_size_evaluate">valid_size </label>
+                    <input class="para" type="text" id="para_valid_size_evaluate" name="valid_size_evaluate" autocomplete="off"
+                    value="0.1">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_test_size_evaluate">test_size </label>
+                    <input class="para" type="text" id="para_test_size_evaluate" name="test_size_evaluate" autocomplete="off"
+                    value="0.1">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_optimizer_evaluate">optimizer </label>
+                    <input class="para" type="text" id="para_optimizer_evaluate" name="optimizer_evaluate" autocomplete="off"
+                    value="Adam">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_learning_rate_evaluate">learning_rate </label>
+                    <input class="para" type="text" id="para_learning_rate_evaluate" name="learning_rate_evaluate" autocomplete="off"
+                    value="0.001">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_criterion_evaluate">criterion </label>
+                    <input class="para" type="text" id="para_criterion_evaluate" name="criterion_evaluate" autocomplete="off"
+                    value="MSELoss">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_epoch_evaluate">epoch</label>
+                    <input class="para" type="text" id="para_epoch_train" name="epoch_train" autocomplete="off"
+                    value="3">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_pcc_evaluate">pcc</label>
+                    <input class="para" type="text" id="para_pcc_evaluate" name="pcc_evaluate" autocomplete="off"
+                    value="True">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_acc_evaluate">acc</label>
+                    <input class="para" type="text" id="para_acc_evaluate" name="acc_evaluate" autocomplete="off"
+                    value="True">
+                </div>
+            </div>
+        </div><!--evaluate_util outer end-->
+        <div class='outer' id='model_util' style="display:none;"><!--outer start用于切换时对div进行遍历-->
+            <div class='inner' id='Word2vecModel' >
+                <div>
+                    <label for="para_vocab_size_Word2vecModel">vocab_size</label>
+                    <input class="para" type="text" id="para_vocab_size_Word2vecModel" name="vocab_size_Word2vecModel" data-required="true" autocomplete="off">
+                </div>
+                <div>
+                    <label for="para_embed_size_Word2vecModel">embed_size </label>
+                    <input class="para" type="text" id="para_embed_size_Word2vecModel" name="embed_size_Word2vecModel" autocomplete="off">
+                </div>
+            </div>
+            <div class='inner' id='MultiMotifLSTMModel' >
+                <div class="row clearfix">
+                    <label for="para_vocab_size_MultiMotifLSTMModel">vocab_size（用","分隔）</label>
+                    <input class="para" type="text" id="para_vocab_size_MultiMotifLSTMModel" name="vocab_size_MultiMotifLSTMModel" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_embedding_dim_MultiMotifLSTMModel">embedding_dim（用","分隔）" </label>
+                    <input class="para" type="text" id="para_embedding_dim_MultiMotifLSTMModel" name="embedding_MultiMotifLSTMModel" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_hidden_dim_MultiMotifLSTMModel">hidden_dim</label>
+                    <input class="para" type="text" id="para_hidden_dim_MultiMotifLSTMModel" name="hidden_dim_MultiMotifLSTMModel" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_output_dim_MultiMotifLSTMModel">output_dim </label>
+                    <input class="para" type="text" id="para_output_dim_MultiMotifLSTMModel" name="output_dim_MultiMotifLSTMModel" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_n_layers_MultiMotifLSTMModel">n_layers </label>
+                    <input class="para" type="text" id="para_n_layers_MultiMotifLSTMModel" name="n_layers_MultiMotifLSTMModel" autocomplete="off" value="1">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_bidirectional_MultiMotifLSTMModel">bidirectional </label>
+                    <input class="para" type="text" id="para_bidirectional_MultiMotifLSTMModel" name="bidirectional_MultiMotifLSTMModel" autocomplete="off" value="False">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_dropout_MultiMotifLSTMModel">dropout </label>
+                    <input class="para" type="text" id="para_dropout_MultiMotifLSTMModel" name="dropout_MultiMotifLSTMModel" autocomplete="off" value="0.5">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_avg_hidden_MultiMotifLSTMModel">avg_hidden </label>
+                    <input class="para" type="text" id="para_avg_hidden_MultiMotifLSTMModel" name="avg_hidden_MultiMotifLSTMModel" autocomplete="off" value="False">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_motif_MultiMotifLSTMModel">motif </label>
+                    <input class="para" type="text" id="para_motif_MultiMotifLSTMModel" name="motif_MultiMotifLSTMModel" autocomplete="off" value="1,2,3">
+                </div>
+            </div>
+            <div class='inner' id='EmbeddingLSTMModel' >
+               <div class="row clearfix">
+                    <label for="para_vocab_size_EmbeddingLSTMModel">vocab_size</label>
+                    <input class="para" type="text" id="para_vocab_size_EmbeddingLSTMModel" name="vocab_size_EmbeddingLSTMModel" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_embedding_dim_EmbeddingLSTMModel">embedding_dim </label>
+                    <input class="para" type="text" id="para_embedding_dim_EmbeddingLSTMModel" name="embedding_EmbeddingLSTMModel" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_hidden_dim_EmbeddingLSTMModel">hidden_dim</label>
+                    <input class="para" type="text" id="para_hidden_dim_EmbeddingLSTMModel" name="hidden_dim_EmbeddingLSTMModel" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_output_dim_EmbeddingLSTMModel">output_dim </label>
+                    <input class="para" type="text" id="para_output_dim_EmbeddingLSTMModel" name="output_dim_EmbeddingLSTMModel" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_n_layers_EmbeddingLSTMModel">n_layers </label>
+                    <input class="para" type="text" id="para_n_layers_EmbeddingLSTMModel" name="n_layers_EmbeddingLSTMModel" autocomplete="off" value="1">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_bidirectional_EmbeddingLSTMModel">bidirectional </label>
+                    <input class="para" type="text" id="para_bidirectional_EmbeddingLSTMModel" name="bidirectional_EmbeddingLSTMModel" autocomplete="off" value="False">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_dropout_EmbeddingLSTMModel">dropout </label>
+                    <input class="para" type="text" id="para_dropout_EmbeddingLSTMModel" name="dropout_EmbeddingLSTMModel" autocomplete="off" value="0.5">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_avg_hidden_EmbeddingLSTMModel">avg_hidden </label>
+                    <input class="para" type="text" id="para_avg_hidden_EmbeddingLSTMModel" name="avg_hidden_EmbeddingLSTMModel" autocomplete="off" value="False">
+                </div>
+            </div>
+            <div class='inner' id='count_parameters' >
+                <div>
+                    <label>Model: Word2vecModel</label>
+                </div>
+                <div>
+                    <label for="para_vocab_size_count_parameters">vocab_size</label>
+                    <input class="para" type="text" id="para_vocab_size_count_parameters" name="vocab_size_count_parameters" data-required="true" autocomplete="off">
+                </div>
+                <div>
+                    <label for="para_embed_size_count_parameters">embed_size </label>
+                    <input class="para" type="text" id="para_embed_size_count_parameters" name="embed_size_count_parameters" autocomplete="off">
+                </div>
+            </div>
+        </div><!--model_util outer end-->
+        <div class='outer' id='file_util' style="display:none;"><!--outer start用于切换时对div进行遍历-->
+            <div class='inner' id='get_data_from_file' >
+                <div class="row clearfix">
+                    <label for="para_fpath_get_data_from_file">fpath</label>
+                    <input class="para" type="text" id="para_fpath_get_data_from_file" name="fpath_get_data_from_file" data-required="true" autocomplete="off" value="input.csv">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_xname_get_data_from_file">xname</label>
+                    <input class="para" type="text" id="para_xname_get_data_from_file" name="xname_get_data_from_file" autocomplete="off" value="Guide strand">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_yname_get_data_from_file">yname</label>
+                    <input class="para" type="text" id="para_yname_get_data_from_file" name="yname_get_data_from_file" autocomplete="off" value="Normalized inhibitory activity">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_upper_get_data_from_file">upper</label>
+                    <input class="para" type="text" id="para_upper_get_data_from_file" name="upper_get_data_from_file" autocomplete="off" value="False">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_dropna_get_data_from_file">dropna</label>
+                    <input class="para" type="text" id="para_dropna_get_data_from_file" name="dropna_get_data_from_file" autocomplete="off" value="False">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_encode_get_data_from_file">encode</label>
+                    <input class="para" type="text" id="para_encode_get_data_from_file" name="encode_get_data_from_file" autocomplete="off" value="utf-8">
+                </div>
+            </div>
+            <div class='inner' id='write_csv_excel'>
+                <div class="row clearfix">
+                    <label for="para_data_write_csv_excel">data（不同行用";"分隔，同一行用","分隔）</label>
+                    <input class="para" type="text" id="para_data_write_csv_excel" name="data_write_csv_excel" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_fpath_write_csv_excel">fpath</label>
+                    <input class="para" type="text" id="para_fpath_write_csv_excel" name="fpath_write_csv_excel" data-required="true" autocomplete="off" value="output.csv">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_columns_write_csv_excel">columns</label>
+                    <input class="para" type="text" id="para_columns_write_csv_excel" name="columns_write_csv_excel" data-required="true" autocomplete="off" value="None">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_header_write_csv_excel">header</label>
+                    <input class="para" type="text" id="para_header_write_csv_excel" name="header_write_csv_excel" data-required="true" autocomplete="off" value="False">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_sheet_name_write_csv_excel">sheet_name</label>
+                    <input class="para" type="text" id="para_sheet_name_write_csv_excel" name="sheet_name_write_csv_excel" data-required="true" autocomplete="off" value="None">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_nan_rep_write_csv_excel">nan_rep</label>
+                    <input class="para" type="text" id="para_nan_rep_write_csv_excel" name="nan_rep_write_csv_excel" data-required="true" autocomplete="off" value="NULL">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_encoding_write_csv_excel">encoding</label>
+                    <input class="para" type="text" id="para_encoding_write_csv_excel" name="encoding_write_csv_excel" data-required="true" autocomplete="off" value="None">
+                </div>
+            </div>
+        </div><!--file_util outer end-->
+        <div class='outer' id='plot_util' style="display:none;"><!--outer start用于切换时对div进行遍历-->
+            <div class='inner' id='make_scatter' >
+                <div >
+                    <label for="para_xdata_make_scatter">xdata（用","分隔）</label>
+                    <input class="para" type="text" id="para_xdata_make_scatter" name="xdata_make_scatter" data-required="true" autocomplete="off">
+                </div>
+                <div>
+                    <label for="para_ydata_make_scatter">ydata（用","分隔）</label>
+                    <input class="para" type="text" id="para_ydata_make_scatter" name="ydata_make_scatter" data-required="true" autocomplete="off">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_xlabel_make_scatter">xlabel</label>
+                    <input class="para" type="text" id="para_xlabel_make_scatter" name="xlabel_make_scatter" data-required="true" autocomplete="off" value='None'>
+                </div>
+                <div class="row clearfix">
+                    <label for="para_ylabel_make_scatter">ylabel</label>
+                    <input class="para" type="text" id="para_ylabel_make_scatter" name="ylabel_make_scatter" data-required="true" autocomplete="off" value='None'>
+                </div>
+                <div>
+                    <label for="para_xtick_make_scatter">xtick</label>
+                    <input class="para" type="text" id="para_xtick_make_scatter" name="xtick_make_scatter" data-required="true" autocomplete="off" value="None">
+                </div>
+                <div>
+                    <label for="para_ytick_make_scatter">ytick</label>
+                    <input class="para" type="text" id="para_ytick_make_scatter" name="ytick_make_scatter" data-required="true" autocomplete="off" value="None">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_title_make_scatter">title</label>
+                    <input class="para" type="text" id="para_title_make_scatter" name="title_make_scatter" data-required="true" autocomplete="off" value="None">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_error_make_scatter">error</label>
+                    <input class="para" type="text" id="para_error_make_scatter" name="error_make_scatter" data-required="true" autocomplete="off" value="False">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_pcc_make_scatter">pcc</label>
+                    <input class="para" type="text" id="para_pcc_make_scatter" name="pcc_make_scatter" data-required="true" autocomplete="off" value="False">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_yxline_make_scatter">yxline</label>
+                    <input class="para" type="text" id="para_yxline_make_scatter" name="yxline_make_scatter" data-required="true" autocomplete="off" value="False">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_filename_make_scatter">filename</label>
+                    <input class="para" type="text" id="para_filename_make_scatter" name="filename_make_scatter" data-required="true" autocomplete="off" value="None">
+                </div>
+            </div>
+            <div class='inner' id='make_plot' >
+                <div>
+                    <label for="para_data_make_plot">data（多组用";"分隔，组内用","分隔）</label>
+                    <input class="para" type="text" id="para_data_make_plot" name="" data-required="true" autocomplete="off">
+                </div>
+                <div>
+                    <label for="para_labels_make_plot">labels</label>
+                    <input class="para" type="text" id="para_labels_make_plot" name="" data-required="true" autocomplete="off" value="None">
+                </div>
+                <div>
+                    <label for="para_titles_make_plot">titles</label>
+                    <input class="para" type="text" id="para_titles_make_plot" name="" data-required="true" autocomplete="off" value="None">
+                </div>
+                <div class="row clearfix">
+                    <label for="para_filename_make_plot">filename</label>
+                    <input class="para" type="text" id="para_filename_make_plot" name="" data-required="true" autocomplete="off" value="None">
+                </div>
+            </div>
+        </div><!--plot_util outer end-->
+        </div><!--div outer end-->
+
+        <div>
+            <div class="lbl">
+                <label for="res" >测试结果: </label>
+            </div>
+            <div id="text-res">
+                <textarea id="res" name="res" rows="12" cols="10" style='font-size:17px;'></textarea>
+            </div>
+            <div id="pic-area">
+                <img src="./static/img/white.jpg" style="position:absolute; left:1400px; top:390px;width:200px; height:200px" / id="res-pic">
+            </div>
+        </div>
+        <div style="text-align:center">
+            <div class="span10 offset2">
+                <input type="button" class="submit" value="submit" onClick="testRSC()">
+            </div>
+        </div>
+        </form>
+    </div>
+
+<script type="text/javascript" src="{{static_url('js/jquery-3.3.1.js')}}"></script>
+<script type="text/javascript" src="{{static_url('js/testRSC.js')}}"></script>
+<script src="{{static_url("js/jquery-ui.js")}}" type="text/javascript"></script> 
+<script src="{{static_url("js/jquery.ffform.js")}}" type="text/javascript"></script>
+</body>
+</html>

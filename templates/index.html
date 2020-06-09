@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta charset="UTF-8" name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+        <title>siRNA沉默效率预测系统</title>
+    </head>
+    <link rel="stylesheet" href="static/css/index.css" type="text/css" />
+    <script type="text/javascript" src="{{static_url('js/jquery-3.3.1.js')}}"></script>
+    <script type="text/javascript" src="{{static_url('js/index.js')}}"></script>
+    <style>
+        .table{
+            width:600px;
+            max-width: 600px;
+            margin: auto;
+        }
+        .table>thead>tr{
+            background: #edf7ff;
+        }
+        .table>thead>tr>th {
+            white-space: nowrap;
+            padding: 8px;
+            line-height: 1.6;
+            height: 32px;
+        }
+        .table>tbody>tr:nth-child(odd){
+            background: #fff;
+            height: 28px;
+        }
+        .table>tbody>tr:nth-child(even){
+            background: #f7f7f7;
+            height: 28px;
+        }
+        .table>tbody>tr:hover{
+            background: #e3ecfc;
+        }
+        .table-sirna{
+            /**make table can scroll**/
+            width: 600px;
+            max-height: 300px;
+            overflow-x: hidden;
+            overflow-y: auto;
+            margin: auto;
+        }
+    </style>
+
+    <body>
+        <div id="topdiv" style="width:100%; height:90px; overflow:hidden;">
+        <h2>siRNA沉默效率预测系统</h2>
+        </div>
+
+        <div class='table-sirna' >
+            <table class="table" id='table-sirna'>
+                <thead>
+                    <tr><th>siRNA 反义链序列</th><th>标准化沉默效率</th></tr>
+                </thead>
+                <tbody id='table-sirna-tbody'>
+                    <tr><td contentEditable="true">CCUAAGAUAAUUCUGCGCCtg</td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                    <tr><td contentEditable="true"></td> <td></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <br />
+        <div id="outForm">
+            <form >
+                <br />
+                <input type="button" class="btn" id="clear_bt" value="清除"">
+                &nbsp;&nbsp;
+                <input type="button" class="btn" id="predict_bt" value="预测" onclick="predict()">
+            </form>
+        </div>
+
+
+    </body>
+
+
+</html>
+

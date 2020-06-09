@@ -1,0 +1,111 @@
+li{
+    list-style-type: none;
+}
+#menu {
+    width: 640px;
+    margin: 30px  auto 0px 700px;
+    height: 45px;
+    background-color: #bed7f3;
+}
+#menu li{
+    float: left;
+    width: 90px;
+    line-height:39px;
+    text-align: center;
+    position:relative;
+    border:none;
+    font-size:18px; color: #000000;
+    display:block;
+    outline:0;
+    text-decoration:none;
+    cursor: pointer;
+}
+#menu li:hover{
+    color: #26adc5; /*导航栏文字颜色 */
+}
+#menu li:hover .dropdown_1column {
+    left:0px;
+    top:38px;
+}
+#menu li:hover .dropdown_2column {
+    left:0px;
+    top:38px;
+}
+.dropdown_1column{ /* 下拉菜单边框颜色*/
+    margin: 0px auto;
+    float: left;
+    position: absolute;
+    left: -999em;
+    text-align: left;
+    border: 1px solid #bed7f3;
+    border-top: none;
+    background: #bed7f3;
+    width: 170px;
+}
+.dropdown_2column{ /* 下拉菜单边框颜色*/
+    margin: 0px auto;
+    float: left;
+    position: absolute;
+    left: -999em;
+    text-align: left;
+    border: 1px solid #bed7f3;
+    border-top: none;
+    background: #bed7f3;
+    width: 100px;
+}
+#menu li:hover div li { /* 下拉菜单文字颜色*/
+    font-size:14px;
+    color:rgb(0, 0, 0);
+    line-height:26px;
+    position:relative;
+    padding:0;margin:0;
+    float:none;
+    text-align:left;
+    width:130px;
+    cursor: pointer;
+}
+
+#menu li:hover div li:hover{
+    color:#26adc5;
+} /*下拉带单鼠标停留颜色*/
+
+#menu li ul {
+    list-style:none;
+    padding:10px 5px;
+    margin:0;
+}
+.container{
+    width: 600px;
+    margin-left: 700px;
+    padding: 20px;
+}
+pre{
+    width:600px;
+    position: absolute;
+    left: 50px;
+    top: 100px;
+    background-color: #f0f0f0;
+    font-size: 16px;
+    margin-bottom: 30px;
+    overflow: auto;
+}
+#imglabel{
+    width: 600px;
+    position: absolute;
+    height: 45px;
+    left: 50px;
+    top: 50px;
+    background-color: #bed7f3;
+    font-size:16px; color: #000000;
+}
+#imglabel span{
+    vertical-align: middle;
+    line-height: 45px;
+    margin-left: 20px;
+}
+.inner label{
+    font-size: 18px;
+}
+.para{
+    font-size: 18px;
+}
